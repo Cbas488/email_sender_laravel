@@ -26,10 +26,8 @@ use Illuminate\Database\Eloquent\Model;
 class User extends Model
 {
 	protected $table = 'users';
-	public $incrementing = false;
 
 	protected $casts = [
-		'id' => 'int',
 		'is_verified' => 'bool'
 	];
 
