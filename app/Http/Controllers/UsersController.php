@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Resources\StoreUser;
+use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Exception;
+use Faker\Core\Number;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
@@ -29,8 +32,18 @@ class UsersController extends Controller
         //
     }
 
+    public function regenerateVerificationToken(Number $id){
+        /*try{
+            if(!is_numeric($id)){
+                
+            }
+        } catch(){
+
+        }*/
+    }
+
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created User on Database.
      */
     public function store(StoreUserRequest $request)
     {
@@ -39,17 +52,18 @@ class UsersController extends Controller
             $data['password'] = Hash::make($data['password']);
             $data['verification_token'] = Str::random(60);
 
-            $user = User::create($data);
-            unset($user['id']);
-            return response() -> json([
-                'message' => 'User created correctly.',
-                'data' => $user
-            ], JsonResponse::HTTP_CREATED);
+            $user = new StoreUser(User::create($data));
+            return ApiResponse::success(
+                'User created correctly.',
+                JsonResponse::HTTP_CREATED,
+                $user
+            );
         } catch (Exception $error){
-            return response() -> json([
-                'message' => 'An error has occurred, try again or contact the administrator.',
-                'error' => $error -> getMessage()
-            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                500,
+                [$error -> getMessage()]
+            );
         }
     }
 

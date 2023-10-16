@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -53,10 +54,11 @@ class StoreUserRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {   
         throw new HttpResponseException(
-            response() -> json([
-                'message' => 'There are errors in the validation.',
-                'errors' => $validator -> errors(),
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY)
+            ApiResponse::fail(
+                'There are errors in the validation.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                $validator -> errors() -> toArray()
+            )
         );
     }
 }
