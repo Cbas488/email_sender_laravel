@@ -6,8 +6,10 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
+use Doctrine\Common\Cache\Psr6\InvalidArgument;
 use Exception;
 use Faker\Core\Number;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
@@ -61,8 +63,7 @@ class UsersController extends Controller
         } catch (Exception $error){
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
-                500,
-                [$error -> getMessage()]
+                errors: [$error -> getMessage()]
             );
         }
     }
@@ -72,7 +73,7 @@ class UsersController extends Controller
      */
     public function show(string $id)
     {
-        //
+        
     }
 
     /**
@@ -92,10 +93,35 @@ class UsersController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove a specified user from database.
      */
     public function destroy(string $id)
     {
-        //
+        try{
+            if(!is_numeric($id)){
+                throw new InvalidArgument('The ID must be numeric.', 422);
+            }
+
+            $user = User::findOrFail($id);
+            $user -> delete();
+            return response() -> noContent();
+        }catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
+        }catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        }catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
     }
 }
