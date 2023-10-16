@@ -34,14 +34,35 @@ class UsersController extends Controller
         //
     }
 
-    public function regenerateVerificationToken(Number $id){
-        /*try{
-            if(!is_numeric($id)){
-                
-            }
-        } catch(){
+    /**
+     * Regenerate verification token of a user
+     */
+    public function regenerateVerificationToken(string $id){
+        try{
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
-        }*/
+            $user = User::findOrFail($id);
+            $user -> update(['verification_token' => Str::random(60)]);
+
+            return ApiResponse::success('Token successfully updated.');
+        }catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
+        }catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        }catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
     }
 
     /**
@@ -98,9 +119,7 @@ class UsersController extends Controller
     public function destroy(string $id)
     {
         try{
-            if(!is_numeric($id)){
-                throw new InvalidArgument('The ID must be numeric.', 422);
-            }
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $user = User::findOrFail($id);
             $user -> delete();
