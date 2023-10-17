@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ChangePasswordUserRequest;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Resources\GetUser;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
@@ -65,7 +66,22 @@ class UsersController extends Controller
      */
     public function show(string $id)
     {
-        
+        try{
+            $user = new GetUser(User::findOrFail($id));
+
+            return ApiResponse::success(data: $user);
+        } catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        } catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
     }
 
     /**
