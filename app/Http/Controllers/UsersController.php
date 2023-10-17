@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePasswordUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
@@ -9,6 +10,7 @@ use App\Models\User;
 use Doctrine\Common\Cache\Psr6\InvalidArgument;
 use Exception;
 use Faker\Core\Number;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -93,19 +95,19 @@ class UsersController extends Controller
             $user = User::findOrFail($id);
             $user -> delete();
             return response() -> noContent();
-        }catch(InvalidArgument $error){
+        } catch(InvalidArgument $error){
             return ApiResponse::fail(
                 'Validation error.',
                 JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
                 [$error -> getMessage()]
             );
-        }catch(ModelNotFoundException $error){
+        } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
                 'User not found.',
                 JsonResponse::HTTP_NOT_FOUND,
                 [$error -> getMessage()]
             );
-        }catch(Exception $error){
+        } catch(Exception $error){
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
                 errors: [$error -> getMessage()]
@@ -124,19 +126,19 @@ class UsersController extends Controller
             $user -> update(['verification_token' => Str::random(60)]);
 
             return ApiResponse::success('Token correctly updated.');
-        }catch(InvalidArgument $error){
+        } catch(InvalidArgument $error){
             return ApiResponse::fail(
                 'Validation error.',
                 JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
                 [$error -> getMessage()]
             );
-        }catch(ModelNotFoundException $error){
+        } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
                 'User not found.',
                 JsonResponse::HTTP_NOT_FOUND,
                 [$error -> getMessage()]
             );
-        }catch(Exception $error){
+        } catch(Exception $error){
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
                 errors: [$error -> getMessage()]
@@ -145,9 +147,29 @@ class UsersController extends Controller
     }
 
     /**
-     * 
+     * Change a user's password to a new one
      */
-    public function changePassword(Request $request) {
+    public function changePassword(ChangePasswordUserRequest $request) {
+        try{
+            $user = User::where('email', $request -> email) -> first();
 
+            if(!Hash::check($request -> old_password, $user -> password)){
+                throw new AuthorizationException('The old password does not match the one provided.');
+            } 
+
+            $user -> update(['password' => Hash::make($request -> new_password)]);
+            return ApiResponse::success('Password changed successfully', 200);
+        } catch(AuthorizationException $error){
+            return ApiResponse::fail(
+                'Unauthorized',
+                401,
+                errors: [$error -> getMessage()]
+            );
+        } catch(Exception $error) {
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
     }
 }

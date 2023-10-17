@@ -21,5 +21,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function() {
     Route::apiResource('users', UsersController::class);
-    Route::get('users/regenerate_verification_token/{id}', [UsersController::class, 'regenerateVerificationToken']);
+    Route::get('users/regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
+    Route::post('users/change-password', [UsersController::class, 'changePassword']);
 });
