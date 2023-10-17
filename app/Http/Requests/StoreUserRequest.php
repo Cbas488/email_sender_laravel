@@ -28,6 +28,7 @@ class StoreUserRequest extends FormRequest
         return [
             'email' => 'email|required|unique:users|max:50|min:10',
             'password' => 'required|string|min:8|max:60',
+            'confirm_password' => 'required|same:password',
             'name' => 'required|string|max:100|min:1'
         ];
     }
@@ -44,6 +45,7 @@ class StoreUserRequest extends FormRequest
             'password.string' => 'The password must be a string.',
             'password.min' => 'The password must have at least 8 character.',
             'password.max' => 'The password be a maximum of 60 characters.',
+            'confirm_password.same' => 'The passwords do not match.',
             'name.required' => 'The name is required.',
             'name.string' => 'The name must be a string.',
             'name.max' => 'The name must be a maximum of 100 characters.',

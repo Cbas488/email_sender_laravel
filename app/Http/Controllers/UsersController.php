@@ -35,38 +35,7 @@ class UsersController extends Controller
     }
 
     /**
-     * Regenerate verification token of a user
-     */
-    public function regenerateVerificationToken(string $id){
-        try{
-            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
-
-            $user = User::findOrFail($id);
-            $user -> update(['verification_token' => Str::random(60)]);
-
-            return ApiResponse::success('Token successfully updated.');
-        }catch(InvalidArgument $error){
-            return ApiResponse::fail(
-                'Validation error.',
-                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
-                [$error -> getMessage()]
-            );
-        }catch(ModelNotFoundException $error){
-            return ApiResponse::fail(
-                'User not found.',
-                JsonResponse::HTTP_NOT_FOUND,
-                [$error -> getMessage()]
-            );
-        }catch(Exception $error){
-            return ApiResponse::fail(
-                'An error has occurred, try again or contact the administrator.',
-                errors: [$error -> getMessage()]
-            );
-        }
-    }
-
-    /**
-     * Store a newly created User on Database.
+     * Store a newly created User in Database.
      */
     public function store(StoreUserRequest $request)
     {
@@ -142,5 +111,43 @@ class UsersController extends Controller
                 errors: [$error -> getMessage()]
             );
         }
+    }
+
+    /**
+     * Regenerate verification token of a user
+     */
+    public function regenerateVerificationToken(string $id){
+        try{
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
+
+            $user = User::findOrFail($id);
+            $user -> update(['verification_token' => Str::random(60)]);
+
+            return ApiResponse::success('Token correctly updated.');
+        }catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
+        }catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        }catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
+    }
+
+    /**
+     * 
+     */
+    public function changePassword(Request $request) {
+
     }
 }
