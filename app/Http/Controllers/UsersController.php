@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ChangePasswordUserRequest;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\GetUser;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
@@ -92,19 +93,29 @@ class UsersController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified User in Database.
      */
-    public function edit(string $id)
+    public function update(UpdateUserRequest $request, string $id)
     {
-        //
-    }
+        try {
+            $user = User::findOrFail($id);
+            $user -> name = $request -> name;
+            $user -> email = $request -> email;
+            $user -> save();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        
+            return response() -> noContent();
+        } catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        } catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
     }
 
     /**

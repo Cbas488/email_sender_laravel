@@ -7,8 +7,9 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 
-class StoreUserRequest extends FormRequest
+class UpdateUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -16,6 +17,19 @@ class StoreUserRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    function prepareForValidation()
+    {
+        if(!is_numeric($this -> route('id'))){
+            throw new HttpResponseException(
+                ApiResponse::fail(
+                    'There are errors in the validation.',
+                    JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                    ['The ID must be numeric.']
+                )
+            );
+        }
     }
 
     /**
@@ -26,10 +40,8 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'email|required|unique:users|max:50|min:10',
-            'password' => 'required|string|min:8|max:60',
-            'confirm_password' => 'required|same:password',
-            'name' => 'required|string|max:100|min:1'
+            'email' => ['email', 'nullable', 'max:50', 'min:10', Rule::unique('users', 'email') -> ignore($this -> route('id'))],
+            'name' => 'nullable|string|max:100|min:1'
         ];
     }
 
@@ -37,16 +49,9 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'email.email' => 'The email does not comply with the email format.',
-            'email.required' => 'The email is required.',
             'email.unique' => 'The entered email is already registered.',
             'email.max' => 'The email must be a minimum of 50 characters.',
             'email.min' => 'The email must be a maximum of 10 characters.',
-            'password.required' => 'The password is required.',
-            'password.string' => 'The password must be a string.',
-            'password.min' => 'The password must have at least 8 character.',
-            'password.max' => 'The password be a maximum of 60 characters.',
-            'confirm_password.same' => 'The passwords do not match.',
-            'name.required' => 'The name is required.',
             'name.string' => 'The name must be a string.',
             'name.max' => 'The name must be a maximum of 100 characters.',
             'name.min' => 'The name must have at least 1 character.',
