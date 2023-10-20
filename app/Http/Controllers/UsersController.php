@@ -149,7 +149,7 @@ class UsersController extends Controller
             $user = User::findOrFail($id);
             $user -> update(['verification_token' => Str::random(60)]);
 
-            return ApiResponse::success('Token correctly updated.');
+            return response() -> noContent();
         } catch(InvalidArgument $error){
             return ApiResponse::fail(
                 'Validation error.',
@@ -184,7 +184,7 @@ class UsersController extends Controller
             } 
 
             $user -> update(['password' => Hash::make($request -> new_password)]);
-            return ApiResponse::success('Password changed successfully', JsonResponse::HTTP_OK);
+            return response() -> noContent();
         } catch(InvalidArgument $error){
             return ApiResponse::fail(
                 'Validation error',
@@ -194,7 +194,8 @@ class UsersController extends Controller
         } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
                 'Not found',
-                JsonResponse::HTTP_NOT_FOUND
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
             );
         } catch(AuthorizationException $error){
             return ApiResponse::fail(

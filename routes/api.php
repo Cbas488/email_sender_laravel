@@ -21,15 +21,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::prefix('v1')->group(function() {
-    Route::apiResource('users', UsersController::class);
-    Route::get('users', function() {
-        return ApiResponse::fail(
-            'Validation error',
-            JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
-            ['The ID is required']
-        );
+Route::prefix('v1') -> group(function() {
+    Route::prefix('users') -> group(function(){
+        Route::post('/', [UsersController::class, 'store']);
+        Route::get('{id}', [UsersController::class, 'show']);
+        Route::put('{id}', [UsersController::class, 'update']);
+        Route::delete('{id}', [UsersController::class, 'destroy']);
+        Route::patch('change-password/{id}', [UsersController::class, 'changePassword']);
+        Route::get('regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
     });
-    Route::get('users/regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
-    Route::patch('users/change-password/{id}', [UsersController::class, 'changePassword']);
 });
