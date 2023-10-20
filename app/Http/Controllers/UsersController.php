@@ -17,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
-use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UsersController extends Controller
 {
@@ -40,7 +39,7 @@ class UsersController extends Controller
     /**
      * Store a newly created User in Database.
      */
-    public function store(StoreUserRequest $request)
+    public function store(StoreUserRequest $request): JsonResponse
     {
         try {
             $data = $request -> all();
@@ -64,7 +63,7 @@ class UsersController extends Controller
     /**
      * Display the specified User.
      */
-    public function show(string $id)
+    public function show(string $id): JsonResponse
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
@@ -111,7 +110,7 @@ class UsersController extends Controller
     /**
      * Remove a specified user from database.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
@@ -142,7 +141,8 @@ class UsersController extends Controller
     /**
      * Regenerate verification token of a user
      */
-    public function regenerateVerificationToken(string $id){
+    public function regenerateVerificationToken(string $id): JsonResponse
+    {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
@@ -173,7 +173,8 @@ class UsersController extends Controller
     /**
      * Change a user's password to a new one
      */
-    public function changePassword(ChangePasswordUserRequest $request, string $id) {
+    public function changePassword(ChangePasswordUserRequest $request, string $id): JsonResponse    
+    {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric'); }
 
