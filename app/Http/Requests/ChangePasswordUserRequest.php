@@ -26,7 +26,6 @@ class ChangePasswordUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|exists:users,email',
             'old_password' => 'required|string',
             'new_password' => 'required|string|min:8|max:60',
             'confirm_password' => 'required|same:new_password',
@@ -36,9 +35,6 @@ class ChangePasswordUserRequest extends FormRequest
     public function messages()
     {
         return [
-            'email.required' => 'The email is required',
-            'email.email' => 'The email does not comply with the email format.',
-            'email.exists' => 'Email does not exist.',
             'old_password.required' => 'The old password is required.',
             'old_password.string' => 'The old passwors must be string.',
             'new_password.required' => 'The password is required.',

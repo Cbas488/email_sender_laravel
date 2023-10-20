@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\UsersController;
+use App\Http\Responses\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +23,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function() {
     Route::apiResource('users', UsersController::class);
+    Route::get('users', function() {
+        return ApiResponse::fail(
+            'Validation error',
+            JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+            ['The ID is required']
+        );
+    });
     Route::get('users/regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
-    Route::post('users/change-password', [UsersController::class, 'changePassword']);
+    Route::patch('users/change-password/{id}', [UsersController::class, 'changePassword']);
 });

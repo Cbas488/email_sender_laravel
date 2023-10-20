@@ -62,14 +62,22 @@ class UsersController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified User.
      */
     public function show(string $id)
     {
         try{
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
+
             $user = new GetUser(User::findOrFail($id));
 
             return ApiResponse::success(data: $user);
+        } catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
         } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
                 'User not found.',
@@ -97,7 +105,7 @@ class UsersController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        
     }
 
     /**
@@ -165,20 +173,33 @@ class UsersController extends Controller
     /**
      * Change a user's password to a new one
      */
-    public function changePassword(ChangePasswordUserRequest $request) {
+    public function changePassword(ChangePasswordUserRequest $request, string $id) {
         try{
-            $user = User::where('email', $request -> email) -> first();
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric'); }
+
+            $user = User::findOrFail($id);
 
             if(!Hash::check($request -> old_password, $user -> password)){
                 throw new AuthorizationException('The old password does not match the one provided.');
             } 
 
             $user -> update(['password' => Hash::make($request -> new_password)]);
-            return ApiResponse::success('Password changed successfully', 200);
+            return ApiResponse::success('Password changed successfully', JsonResponse::HTTP_OK);
+        } catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
+        } catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'Not found',
+                JsonResponse::HTTP_NOT_FOUND
+            );
         } catch(AuthorizationException $error){
             return ApiResponse::fail(
                 'Unauthorized',
-                401,
+                JsonResponse::HTTP_UNAUTHORIZED,
                 errors: [$error -> getMessage()]
             );
         } catch(Exception $error) {
