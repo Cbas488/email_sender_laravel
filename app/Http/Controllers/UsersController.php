@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\GetUser;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
+use App\Mail\ChangeEmailMail;
 use App\Models\User;
 use Doctrine\Common\Cache\Psr6\InvalidArgument;
 use Exception;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class UsersController extends Controller
@@ -40,7 +42,7 @@ class UsersController extends Controller
     /**
      * Store a newly created User in Database.
      */
-    public function store(StoreUserRequest $request): JsonResponse
+    public function store(StoreUserRequest $request)
     {
         try {
             $data = $request -> all();
@@ -64,7 +66,7 @@ class UsersController extends Controller
     /**
      * Display the specified User.
      */
-    public function show(string $id): JsonResponse
+    public function show(string $id)
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
@@ -99,10 +101,18 @@ class UsersController extends Controller
     {
         try {
             $user = User::findOrFail($id);
-            $user -> name = $request -> name;
-            $user -> email = $request -> email;
-            $user -> save();
 
+            if($user -> email != $request -> email){
+                $mail = Mail::to($request -> email) -> send(new ChangeEmailMail());
+                return ApiResponse::success(
+                    'Para cambiar el email se envió un token de autorización a email a colocar.',
+                    JsonResponse::HTTP_ACCEPTED,
+                );
+            }
+
+            $user -> name = $request -> name;
+            $user -> save();
+            
             return response() -> noContent();
         } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
@@ -121,7 +131,7 @@ class UsersController extends Controller
     /**
      * Remove a specified user from database.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id)
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
@@ -152,7 +162,7 @@ class UsersController extends Controller
     /**
      * Regenerate verification token of a user
      */
-    public function regenerateVerificationToken(string $id): JsonResponse
+    public function regenerateVerificationToken(string $id)
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
@@ -184,7 +194,7 @@ class UsersController extends Controller
     /**
      * Change a user's password to a new one
      */
-    public function changePassword(ChangePasswordUserRequest $request, string $id): JsonResponse    
+    public function changePassword(ChangePasswordUserRequest $request, string $id)    
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric'); }
