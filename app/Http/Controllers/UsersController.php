@@ -9,10 +9,10 @@ use App\Http\Resources\GetUser;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
 use App\Mail\ChangeEmailMail;
+use App\Models\EmailResetToken;
 use App\Models\User;
 use Doctrine\Common\Cache\Psr6\InvalidArgument;
 use Exception;
-use Faker\Core\Number;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
+use Illuminate\Database\Console\Migrations\RollbackCommand;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class UsersController extends Controller
 {
@@ -47,7 +51,7 @@ class UsersController extends Controller
         try {
             $data = $request -> all();
             $data['password'] = Hash::make($data['password']);
-            $data['verification_token'] = Str::random(60);
+            $data['verification_token'] = Str::random(120);
 
             $user = new StoreUser(User::create($data));
             return ApiResponse::success(
@@ -99,21 +103,49 @@ class UsersController extends Controller
      */
     public function update(UpdateUserRequest $request, string $id)
     {
+        $response_return = response() -> noContent();
+
+        DB::beginTransaction();
         try {
             $user = User::findOrFail($id);
 
             if($user -> email != $request -> email){
-                $mail = Mail::to($request -> email) -> send(new ChangeEmailMail());
-                return ApiResponse::success(
-                    'Para cambiar el email se envió un token de autorización a email a colocar.',
+                $token = Str::random(120);
+                $emailResetTokenData = [
+                    'user_id' => $user -> id,
+                    'token' => $token,
+                    'new_email' => $request -> email,
+                    'date_expiration' => Carbon::now() -> addDays(2)
+                ];
+
+                if(!EmailResetToken::where('user_id', $user -> id) -> exists()){
+                    EmailResetToken::create([
+                        'user_id' => $user -> id,
+                        'token' => $token,
+                        'new_email' => $request -> email,
+                        'date_expiration' => Carbon::now() -> addDays(2)
+                    ]);
+                } else {
+                    $actualEmailResetToken = EmailResetToken::where('user_id', $user -> id) -> first();
+                    
+                    $actualEmailResetToken -> token = $emailResetTokenData['token'];
+                    $actualEmailResetToken -> new_email = $emailResetTokenData['new_email'];
+                    $actualEmailResetToken -> is_used = TRUE;
+                    $actualEmailResetToken -> date_expiration = Carbon::now() -> addDays(2);
+                    $actualEmailResetToken -> save();
+                }
+
+                Mail::to($request -> email) -> send(new ChangeEmailMail());
+                $response_return = ApiResponse::success(
+                    'Para cambiar el email se envió un token de autorización al nuevo email.',
                     JsonResponse::HTTP_ACCEPTED,
                 );
             }
 
             $user -> name = $request -> name;
             $user -> save();
-            
-            return response() -> noContent();
+            DB::commit();
+            return $response_return;
         } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
                 'User not found.',
@@ -121,6 +153,7 @@ class UsersController extends Controller
                 [$error -> getMessage()]
             );
         } catch(Exception $error){
+            DB::rollBack();
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
                 errors: [$error -> getMessage()]
@@ -168,7 +201,7 @@ class UsersController extends Controller
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $user = User::findOrFail($id);
-            $user -> update(['verification_token' => Str::random(60)]);
+            $user -> update(['verification_token' => Str::random(120)]);
 
             return response() -> noContent();
         } catch(InvalidArgument $error){
