@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Database\Console\Migrations\RollbackCommand;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 class UsersController extends Controller
@@ -137,7 +138,7 @@ class UsersController extends Controller
 
                 Mail::to($request -> email) -> send(new ChangeEmailMail());
                 $response_return = ApiResponse::success(
-                    'Para cambiar el email se envió un token de autorización al nuevo email.',
+                    'To change the email address an authorization token was sent to the new email address.',
                     JsonResponse::HTTP_ACCEPTED,
                 );
             }
@@ -147,12 +148,20 @@ class UsersController extends Controller
             DB::commit();
             return $response_return;
         } catch(ModelNotFoundException $error){
+            DB::rollBack();
             return ApiResponse::fail(
                 'User not found.',
                 JsonResponse::HTTP_NOT_FOUND,
                 [$error -> getMessage()]
             );
+        } catch(UniqueConstraintViolationException $error) {
+            DB::rollBack();
+            return ApiResponse::fail(
+                'The selected email has already been taken by someone else to change it as theirs.',
+                errors: [$error -> getMessage()]
+            );
         } catch(Exception $error){
+            dd(get_class($error));
             DB::rollBack();
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
