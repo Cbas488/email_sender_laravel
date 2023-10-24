@@ -16,10 +16,7 @@ class ChangeEmailMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(protected string $token){}
 
     /**
      * Get the message envelope.
@@ -38,6 +35,9 @@ class ChangeEmailMail extends Mailable
     {
         return new Content(
             markdown: 'emails.users.changeEmail',
+            with: [
+                'token' => $this -> token
+            ]
         );
     }
 

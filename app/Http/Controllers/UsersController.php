@@ -136,7 +136,7 @@ class UsersController extends Controller
                     $actualEmailResetToken -> save();
                 }
 
-                Mail::to($request -> email) -> send(new ChangeEmailMail());
+                Mail::to($request -> email) -> send(new ChangeEmailMail($token));
                 $response_return = ApiResponse::success(
                     'To change the email address an authorization token was sent to the new email address.',
                     JsonResponse::HTTP_ACCEPTED,
@@ -158,10 +158,10 @@ class UsersController extends Controller
             DB::rollBack();
             return ApiResponse::fail(
                 'The selected email has already been taken by someone else to change it as theirs.',
+                JsonResponse::HTTP_CONFLICT,
                 errors: [$error -> getMessage()]
             );
         } catch(Exception $error){
-            dd(get_class($error));
             DB::rollBack();
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
