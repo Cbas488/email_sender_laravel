@@ -227,8 +227,11 @@ class UsersController extends Controller
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
-            $user = User::findOrFail($id);
-            $user -> update(['verification_token' => Str::random(120)]);
+            $verificationToken = VerificationAccountToken::findOrFail($id);
+            $verificationToken -> update([
+                'token' => Hash::make(Str::random(120)),
+                'expiration' => Carbon::now() -> addDays(2)
+            ]);
 
             return response() -> noContent();
         } catch(InvalidArgument $error){
