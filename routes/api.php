@@ -29,5 +29,6 @@ Route::prefix('v1') -> group(function() {
         Route::delete('{id}', [UsersController::class, 'destroy']);
         Route::patch('change-password/{id}', [UsersController::class, 'changePassword']);
         Route::get('regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
+        Route::post('change-email/{token}', [UsersController::class, 'changeEmail']);
     });
 });
