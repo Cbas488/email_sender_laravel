@@ -16,10 +16,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $email
  * @property string $password
  * @property string $name
- * @property string $verification_token
  * @property bool $is_verified
  * @property Carbon $created_at
  * @property Carbon $updated_at
+ * 
+ * @property EmailResetToken $email_reset_token
+ * @property VerificationAccountToken $verification_account_token
  *
  * @package App\Models
  */
@@ -32,15 +34,23 @@ class User extends Model
 	];
 
 	protected $hidden = [
-		'password',
-		'verification_token'
+		'password'
 	];
 
 	protected $fillable = [
 		'email',
 		'password',
 		'name',
-		'verification_token',
 		'is_verified'
 	];
+
+	public function email_reset_token()
+	{
+		return $this->hasOne(EmailResetToken::class);
+	}
+
+	public function verification_account_token()
+	{
+		return $this->hasOne(VerificationAccountToken::class);
+	}
 }

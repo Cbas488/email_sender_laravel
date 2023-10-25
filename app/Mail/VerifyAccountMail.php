@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ChangeEmailMail extends Mailable
+class VerifyAccountMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -24,7 +24,7 @@ class ChangeEmailMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Change email on Email Sender',
+            subject: 'Verify Account Mail',
         );
     }
 
@@ -34,7 +34,7 @@ class ChangeEmailMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.users.changeEmail',
+            markdown: 'emails.users.verifyAccountEmail',
             with: ['token' => $this -> token]
         );
     }
