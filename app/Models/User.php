@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class User
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_verified
  * @property Carbon $created_at
  * @property Carbon $updated_at
+ * @property string|null $deleted_at
  * 
  * @property EmailResetToken $email_reset_token
  * @property VerificationAccountToken $verification_account_token
@@ -27,6 +29,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class User extends Model
 {
+	use SoftDeletes;
 	protected $table = 'users';
 
 	protected $casts = [
