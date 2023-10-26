@@ -53,4 +53,13 @@ class User extends Model
 	{
 		return $this->hasOne(VerificationAccountToken::class);
 	}
+
+	public static function boot() {
+		parent::boot();
+
+		static::deleting(function(User $user){
+			if($user -> email_reset_token){ $user -> email_reset_token -> delete(); }
+			if($user -> verification_account_token){ $user -> verification_account_token -> delete(); }
+		});
+	}
 }
