@@ -131,7 +131,7 @@ class UsersController extends Controller
                 $token = Str::random(71);
                 $emailResetTokenData = [
                     'user_id' => $user -> id,
-                    'token' => $token,
+                    'token' => Hash::make($token),
                     'new_email' => $request -> email,
                     'date_expiration' => Carbon::now() -> addDays(2)
                 ];
@@ -141,7 +141,7 @@ class UsersController extends Controller
                 } else {
                     $actualEmailResetToken = EmailResetToken::where('user_id', $user -> id) -> first();
                     
-                    $actualEmailResetToken -> token = $emailResetTokenData['token'];
+                    $actualEmailResetToken -> token = Hash::make($emailResetTokenData['token']);
                     $actualEmailResetToken -> new_email = $emailResetTokenData['new_email'];
                     $actualEmailResetToken -> is_used = FALSE;
                     $actualEmailResetToken -> date_expiration = Carbon::now() -> addDays(2);
@@ -294,12 +294,14 @@ class UsersController extends Controller
     /**
      * Change the email of a User
      */
-    public function changeEmail(ChangeEmailRequest $request, string $token){
+    public function changeEmail(ChangeEmailRequest $request){
+        $token = $request -> query('token');
+
         DB::beginTransaction();
         try {
             $user = User::where('email', $request -> previous_email) -> first();
             $emailTokenRecord = EmailResetToken::findOrFail($user -> id);
-            if($emailTokenRecord -> token != $token){
+            if(!Hash::check($token, $emailTokenRecord -> token)){
                 throw new TokenMismatchException();
             }
             if($emailTokenRecord -> is_used){
@@ -360,8 +362,9 @@ class UsersController extends Controller
         }
     }
 
-    public function verifyAccount(Request $request, string $token) {
+    public function verifyAccount(Request $request) {
         $emailUser = $request -> query('email');
+        $token = $request -> query('token');
         if(!$emailUser){
             return ApiResponse::fail(
                 'The email is required.',
