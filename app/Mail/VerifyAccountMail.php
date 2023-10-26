@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -16,7 +15,7 @@ class VerifyAccountMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(protected string $token){}
+    public function __construct(protected string $token, protected string $email){}
 
     /**
      * Get the message envelope.
@@ -24,7 +23,7 @@ class VerifyAccountMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verify Account Mail',
+            subject: 'Verify Account Email Sender',
         );
     }
 
@@ -35,7 +34,10 @@ class VerifyAccountMail extends Mailable
     {
         return new Content(
             markdown: 'emails.users.verifyAccountEmail',
-            with: ['token' => $this -> token]
+            with: [
+                'token' => $this -> token,
+                'email' => $this -> email
+            ]
         );
     }
 

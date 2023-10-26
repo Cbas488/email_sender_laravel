@@ -30,5 +30,6 @@ Route::prefix('v1') -> group(function() {
         Route::patch('change-password/{id}', [UsersController::class, 'changePassword']);
         Route::get('regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
         Route::post('change-email/{token}', [UsersController::class, 'changeEmail']);
+        Route::get('verify-account/{token}', [UsersController::class, 'verifyAccount']);
     });
 });

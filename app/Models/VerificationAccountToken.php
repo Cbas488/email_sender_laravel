@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $user_id
  * @property string $token
  * @property Carbon $expiration
+ * @property bool|null $is_used
  * 
  * @property User $user
  *
@@ -29,7 +30,8 @@ class VerificationAccountToken extends Model
 
 	protected $casts = [
 		'user_id' => 'int',
-		'expiration' => 'datetime'
+		'expiration' => 'datetime',
+		'is_used' => 'bool'
 	];
 
 	protected $hidden = [
@@ -39,7 +41,8 @@ class VerificationAccountToken extends Model
 	protected $fillable = [
 		'user_id',
 		'token',
-		'expiration'
+		'expiration',
+		'is_used'
 	];
 
 	public function user()

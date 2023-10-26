@@ -5,7 +5,7 @@ To access your account you need to verify it, access the following link please:
 
 <p>Token: {{ $token }}</p>
 
-<x-mail::button :url="'https://endpoint-verify-account/'.$token">
+<x-mail::button :url="'https://endpoint-verify-account/'. $token . '?email=' . $email">
 Click me
 </x-mail::button>
 

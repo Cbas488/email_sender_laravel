@@ -27,14 +27,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Database\Console\Migrations\RollbackCommand;
-use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class UsersController extends Controller
 {
@@ -63,7 +58,7 @@ class UsersController extends Controller
         try {
             $data = $request -> all();
             $data['password'] = Hash::make($data['password']);
-            $verificationToken = Str::random(120);
+            $verificationToken = Str::random(71);
 
             $user = new StoreUser(User::create($data));
             VerificationAccountToken::create([
@@ -72,7 +67,7 @@ class UsersController extends Controller
                 'expiration' => Carbon::now() -> addDays(2)
             ]);
 
-            Mail::to($request -> email) -> send(new VerifyAccountMail($verificationToken));
+            Mail::to($request -> email) -> send(new VerifyAccountMail($verificationToken, $request -> email));
 
             DB::commit();
 
@@ -133,7 +128,7 @@ class UsersController extends Controller
             $user = User::findOrFail($id);
 
             if($user -> email != $request -> email){
-                $token = Str::random(120);
+                $token = Str::random(71);
                 $emailResetTokenData = [
                     'user_id' => $user -> id,
                     'token' => $token,
@@ -229,7 +224,7 @@ class UsersController extends Controller
 
             $verificationToken = VerificationAccountToken::findOrFail($id);
             $verificationToken -> update([
-                'token' => Hash::make(Str::random(120)),
+                'token' => Hash::make(Str::random(71)),
                 'expiration' => Carbon::now() -> addDays(2)
             ]);
 
@@ -357,6 +352,72 @@ class UsersController extends Controller
                 JsonResponse::HTTP_FORBIDDEN
             );
         } catch(Exception $error){
+            DB::rollBack();
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
+    }
+
+    public function verifyAccount(Request $request, string $token) {
+        $emailUser = $request -> query('email');
+        if(!$emailUser){
+            return ApiResponse::fail(
+                'The email is required.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $user = User::where('email', $emailUser) -> select('id') -> first();
+            $verifyAccountRecord = VerificationAccountToken::findOrFail($user -> id);
+            
+            if(!Hash::check($token, $verifyAccountRecord -> token)){
+                throw new TokenMismatchException();
+            }
+            if($verifyAccountRecord -> is_used){
+                throw new TokenHasBeenUsedException();
+            }
+            if(Carbon::now()->gt($verifyAccountRecord -> expiration)){
+                throw new TokenExpiredException();
+            }
+
+            $user -> is_verified = TRUE;
+            $user -> save();
+            $verifyAccountRecord -> is_used = TRUE;
+            $verifyAccountRecord -> save();
+
+            DB::commit();
+
+            return ApiResponse::success('Account verified successfully', JsonResponse::HTTP_OK);
+        } catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'Verify token not found, generate another one.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        } catch(TokenMismatchException $error) {
+            DB::rollBack();
+            return ApiResponse::fail(
+                'Incorrect token',
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        } catch(TokenHasBeenUsedException $error) {
+            DB::rollBack();
+            return ApiResponse::fail(
+                'The token has been used, generate another one.',
+                JsonResponse::HTTP_FORBIDDEN
+            );
+        } catch(TokenExpiredException $error) {
+            DB::rollBack();
+            return ApiResponse::fail(
+                'The token has expired, generate another one.',
+                JsonResponse::HTTP_FORBIDDEN
+            );
+        } catch (Exception $error) {
             DB::rollBack();
             return ApiResponse::fail(
                 'An error has occurred, try again or contact the administrator.',
