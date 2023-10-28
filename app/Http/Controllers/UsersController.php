@@ -72,7 +72,7 @@ class UsersController extends Controller
             DB::commit();
 
             return ApiResponse::success(
-                'User created correctly.',
+                'Account created succesfully, you need verify it to access.',
                 JsonResponse::HTTP_CREATED,
                 $user
             );
@@ -184,15 +184,91 @@ class UsersController extends Controller
     }
 
     /**
-     * Remove a specified user from database.
+     * Disable specified user from database.
      */
-    public function destroy(string $id)
+    public function disableAccount(string $id)
     {
         try{
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
-            $user = User::findOrFail($id);
-            $user -> delete();
+            $user = User::withTrashed() -> findOrFail($id);
+
+            if($user -> trashed()){ 
+                return ApiResponse::fail(
+                    'The account is already disabled.',
+                    JsonResponse::HTTP_CONFLICT,
+                ); 
+            }
+            else { $user -> delete(); }
+
+            return response() -> noContent();
+        } catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
+        } catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        } catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
+    }
+
+    /**
+     * Enable account disabled
+     */
+    public function enableAccount(string $id){
+        try {
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
+
+            $user = User::withTrashed() -> findOrFail($id);
+
+            if($user -> trashed()){
+                $user -> restore();
+            } else {
+                return ApiResponse::fail(
+                    'The account is already enabled.',
+                    JsonResponse::HTTP_CONFLICT,
+                ); 
+            }
+
+            return response() -> noContent();
+        } catch(InvalidArgument $error){
+            return ApiResponse::fail(
+                'Validation error.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                [$error -> getMessage()]
+            );
+        } catch(ModelNotFoundException $error){
+            return ApiResponse::fail(
+                'User not found.',
+                JsonResponse::HTTP_NOT_FOUND,
+                [$error -> getMessage()]
+            );
+        } catch(Exception $error){
+            return ApiResponse::fail(
+                'An error has occurred, try again or contact the administrator.',
+                errors: [$error -> getMessage()]
+            );
+        }
+    }
+
+    public function destroy(string $id){
+        try {
+            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
+
+            $user = User::withTrashed() -> findOrFail($id);
+
+            $user -> forceDelete();
+
             return response() -> noContent();
         } catch(InvalidArgument $error){
             return ApiResponse::fail(
@@ -362,6 +438,10 @@ class UsersController extends Controller
         }
     }
 
+
+    /**
+     * Verify acocount's user
+     */
     public function verifyAccount(Request $request) {
         $emailUser = $request -> query('email');
         $token = $request -> query('token');

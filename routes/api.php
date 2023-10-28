@@ -31,5 +31,7 @@ Route::prefix('v1') -> group(function() {
         Route::post('change-email', [UsersController::class, 'changeEmail']);
         Route::get('verify-account', [UsersController::class, 'verifyAccount']);
         Route::get('{id}', [UsersController::class, 'show']);
+        Route::delete('disable-account/{id}', [UsersController::class, 'disableAccount']);
+        Route::get('enable-account/{id}', [UsersController::class, 'enableAccount']);
     });
 });
