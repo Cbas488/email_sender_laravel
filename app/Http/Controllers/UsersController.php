@@ -156,7 +156,7 @@ class UsersController extends Controller
                 );
             }
 
-            $user -> name = $request -> name;
+            $user -> name = $request -> name ? $request -> name : $user -> name;
             $user -> save();
             DB::commit();
             return $response_return;
@@ -261,6 +261,9 @@ class UsersController extends Controller
         }
     }
 
+    /**
+     * Delete user
+     */
     public function destroy(string $id){
         try {
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
@@ -299,8 +302,13 @@ class UsersController extends Controller
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $verificationToken = VerificationAccountToken::findOrFail($id);
+            $email = User::find($id) -> select('email') -> first();
+            $token = Str::random(71);
+
+            Mail::to($email -> email) -> send(new VerifyAccountMail($token, $email -> email));
+
             $verificationToken -> update([
-                'token' => Hash::make(Str::random(71)),
+                'token' => Hash::make($token),
                 'expiration' => Carbon::now() -> addDays(2)
             ]);
 
@@ -445,9 +453,9 @@ class UsersController extends Controller
     public function verifyAccount(Request $request) {
         $emailUser = $request -> query('email');
         $token = $request -> query('token');
-        if(!$emailUser){
+        if(!$emailUser || !$token){
             return ApiResponse::fail(
-                'The email is required.',
+                'The email and token are required.',
                 JsonResponse::HTTP_UNPROCESSABLE_ENTITY
             );
         }
@@ -455,7 +463,7 @@ class UsersController extends Controller
         DB::beginTransaction();
 
         try {
-            $user = User::where('email', $emailUser) -> select('id') -> first();
+            $user = User::where('email', $emailUser) -> select('id') -> firstOrFail();
             $verifyAccountRecord = VerificationAccountToken::findOrFail($user -> id);
             
             if(!Hash::check($token, $verifyAccountRecord -> token)){
@@ -477,8 +485,9 @@ class UsersController extends Controller
 
             return ApiResponse::success('Account verified successfully', JsonResponse::HTTP_OK);
         } catch(ModelNotFoundException $error){
+            DB::rollBack();
             return ApiResponse::fail(
-                'Verify token not found, generate another one.',
+                'User not found.',
                 JsonResponse::HTTP_NOT_FOUND,
                 [$error -> getMessage()]
             );
