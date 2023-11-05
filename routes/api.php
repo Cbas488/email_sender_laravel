@@ -33,5 +33,6 @@ Route::prefix('v1') -> group(function() {
         Route::get('{id}', [UsersController::class, 'show']);
         Route::delete('disable-account/{id}', [UsersController::class, 'disableAccount']);
         Route::get('enable-account/{id}', [UsersController::class, 'enableAccount']);
+        Route::post('/login', [UsersController::class, 'login']);
     });
 });

@@ -18,7 +18,6 @@ use App\Models\EmailResetToken;
 use App\Models\User;
 use App\Models\VerificationAccountToken;
 use Doctrine\Common\Cache\Psr6\InvalidArgument;
-use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -30,6 +29,9 @@ use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Exception;
+
 
 class UsersController extends Controller
 {
@@ -516,5 +518,18 @@ class UsersController extends Controller
                 errors: [$error -> getMessage()]
             );
         }
+    }
+
+    public function login(Request $request){
+        $credentials = [
+            'email' => $request -> email,
+            'password' => $request -> password
+        ];
+
+        if(Auth::attempt($credentials)){
+            return ApiResponse::success();
+        }
+
+        return ApiResponse::fail();
     }
 }
