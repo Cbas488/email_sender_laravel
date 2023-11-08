@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Exceptions\PasswordMismatchException;
 use App\Exceptions\TokenExpiredException;
 use App\Exceptions\TokenHasBeenUsedException;
-use App\Http\Requests\ChangeEmailRequest;
-use App\Http\Requests\ChangePasswordUserRequest;
-use App\Http\Requests\StoreUserRequest;
-use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\User\ChangeEmailRequest;
+use App\Http\Requests\User\ChangePasswordUserRequest;
+use App\Http\Requests\User\LoginUserRequest;
+use App\Http\Requests\User\StoreUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\GetUser;
 use App\Http\Resources\StoreUser;
 use App\Http\Responses\ApiResponse;
@@ -40,7 +41,7 @@ class UsersController extends Controller
      */
     public function index()
     {
-        //
+        return ApiResponse::success(data: User::all());
     }
 
     /**
@@ -520,16 +521,21 @@ class UsersController extends Controller
         }
     }
 
-    public function login(Request $request){
+    public function login(LoginUserRequest $request){
         $credentials = [
             'email' => $request -> email,
             'password' => $request -> password
         ];
 
         if(Auth::attempt($credentials)){
-            return ApiResponse::success();
+            $user = Auth::user();
+            $user -> tokens() -> delete();
+            $token = $user -> createToken('temporal-access-token', ["*"], Carbon::now() -> addDay(1)) -> plainTextToken;
+            $cookie = cookie('temporal-access-token', $token, 60 * 24);
+
+            return ApiResponse::success(data: ["token" => $token]) -> withoutCookie($cookie);
         }
 
-        return ApiResponse::fail();
+        return ApiResponse::fail("Invalid credentials", JsonResponse::HTTP_UNAUTHORIZED);
     }
 }

@@ -23,16 +23,20 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::prefix('v1') -> group(function() {
     Route::prefix('users') -> group(function(){
-        Route::post('/', [UsersController::class, 'store']);
-        Route::put('{id}', [UsersController::class, 'update']);
-        Route::delete('{id}', [UsersController::class, 'destroy']);
-        Route::patch('change-password/{id}', [UsersController::class, 'changePassword']);
-        Route::get('regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
-        Route::post('change-email', [UsersController::class, 'changeEmail']);
-        Route::get('verify-account', [UsersController::class, 'verifyAccount']);
-        Route::get('{id}', [UsersController::class, 'show']);
-        Route::delete('disable-account/{id}', [UsersController::class, 'disableAccount']);
-        Route::get('enable-account/{id}', [UsersController::class, 'enableAccount']);
+        Route::group(['middleware' => ['auth:sanctum']], function(){
+            Route::get('/', [UsersController::class, 'index']);
+            Route::post('/', [UsersController::class, 'store']);
+            Route::put('{id}', [UsersController::class, 'update']);
+            Route::delete('{id}', [UsersController::class, 'destroy']);
+            Route::patch('change-password/{id}', [UsersController::class, 'changePassword']);
+            Route::get('regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
+            Route::post('change-email', [UsersController::class, 'changeEmail']);
+            Route::get('verify-account', [UsersController::class, 'verifyAccount']);
+            Route::get('{id}', [UsersController::class, 'show']);
+            Route::delete('disable-account/{id}', [UsersController::class, 'disableAccount']);
+            Route::get('enable-account/{id}', [UsersController::class, 'enableAccount']);
+        });
+
         Route::post('/login', [UsersController::class, 'login']);
     });
 });
