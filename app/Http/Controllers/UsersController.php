@@ -114,7 +114,7 @@ class UsersController extends Controller
                 [$error -> getMessage()]
             );
         } catch(Exception $error){
-            $code = $error -> getStatusCode() ? $error -> getStatusCode() : 500;
+            $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
             switch ($code) {
                 case 403:
                     return ApiResponse::fail(
@@ -140,10 +140,11 @@ class UsersController extends Controller
 
         DB::beginTransaction();
         try {
+
             $user = User::findOrFail($id);
 
             abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
-
+            
             if($user -> email != $request -> email){
                 $token = Str::random(71);
                 $emailResetTokenData = [
@@ -193,10 +194,20 @@ class UsersController extends Controller
             );
         } catch(Exception $error){
             DB::rollBack();
-            return ApiResponse::fail(
-                'An error has occurred, try again or contact the administrator.',
-                errors: [$error -> getMessage()]
-            );
+            $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
+            switch ($code) {
+                case 403:
+                    return ApiResponse::fail(
+                        $error -> getMessage(),
+                        $code,
+                        ['You do not have access to modify this resource.']
+                    );
+                default:
+                    return ApiResponse::fail(
+                        message: 'An error has occurred, try again or contact the administrator.',
+                        errors: [$error -> getMessage()]
+                    );
+            }
         }
     }
 
@@ -209,6 +220,8 @@ class UsersController extends Controller
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $user = User::withTrashed() -> findOrFail($id);
+
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
 
             if($user -> trashed()){ 
                 return ApiResponse::fail(
@@ -232,10 +245,20 @@ class UsersController extends Controller
                 [$error -> getMessage()]
             );
         } catch(Exception $error){
-            return ApiResponse::fail(
-                'An error has occurred, try again or contact the administrator.',
-                errors: [$error -> getMessage()]
-            );
+            $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
+            switch ($code) {
+                case 403:
+                    return ApiResponse::fail(
+                        $error -> getMessage(),
+                        $code,
+                        ['You do not have access to disable this resource.']
+                    );
+                default:
+                    return ApiResponse::fail(
+                        message: 'An error has occurred, try again or contact the administrator.',
+                        errors: [$error -> getMessage()]
+                    );
+            }
         }
     }
 
@@ -287,6 +310,8 @@ class UsersController extends Controller
 
             $user = User::withTrashed() -> findOrFail($id);
 
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+
             $user -> forceDelete();
 
             return response() -> noContent();
@@ -303,10 +328,20 @@ class UsersController extends Controller
                 [$error -> getMessage()]
             );
         } catch(Exception $error){
-            return ApiResponse::fail(
-                'An error has occurred, try again or contact the administrator.',
-                errors: [$error -> getMessage()]
-            );
+            $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
+            switch ($code) {
+                case 403:
+                    return ApiResponse::fail(
+                        $error -> getMessage(),
+                        $code,
+                        ['You do not have access to destroy this resource.']
+                    );
+                default:
+                    return ApiResponse::fail(
+                        message: 'An error has occurred, try again or contact the administrator.',
+                        errors: [$error -> getMessage()]
+                    );
+            }
         }
     }
 
@@ -401,6 +436,9 @@ class UsersController extends Controller
         DB::beginTransaction();
         try {
             $user = User::where('email', $request -> previous_email) -> first();
+
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+
             $emailTokenRecord = EmailResetToken::findOrFail($user -> id);
             if(!Hash::check($token, $emailTokenRecord -> token)){
                 throw new TokenMismatchException();
@@ -456,10 +494,20 @@ class UsersController extends Controller
             );
         } catch(Exception $error){
             DB::rollBack();
-            return ApiResponse::fail(
-                'An error has occurred, try again or contact the administrator.',
-                errors: [$error -> getMessage()]
-            );
+            $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
+            switch ($code) {
+                case 403:
+                    return ApiResponse::fail(
+                        $error -> getMessage(),
+                        $code,
+                        ['You do not have access to change this resource.']
+                    );
+                default:
+                    return ApiResponse::fail(
+                        message: 'An error has occurred, try again or contact the administrator.',
+                        errors: [$error -> getMessage()]
+                    );
+            }
         }
     }
 
