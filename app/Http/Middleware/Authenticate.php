@@ -18,8 +18,8 @@ class Authenticate extends Middleware
 
     public function handle($request, Closure $next, ...$guards)
     {
-        if($token = $request -> cookie('temporal-access-token')){
-            $request -> headers -> set('Authorization', 'Bearer ' . $token);
+        if($request -> cookie('temporal-access-token')){
+            $request -> headers -> set('Authorization', 'Bearer ' . $request -> cookie('temporal-access-token'));
         }
         //dd($request);
         $this -> authenticate($request, $guards);

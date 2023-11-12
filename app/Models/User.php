@@ -24,6 +24,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property string|null $deleted_at
+ * @property int|null $role
  * 
  * @property EmailResetToken $email_reset_token
  * @property VerificationAccountToken $verification_account_token
@@ -37,7 +38,8 @@ class User extends Authenticable
 	protected $table = 'users';
 
 	protected $casts = [
-		'is_verified' => 'bool'
+		'is_verified' => 'bool',
+		'role' => 'int'
 	];
 
 	protected $hidden = [
@@ -48,7 +50,8 @@ class User extends Authenticable
 		'email',
 		'password',
 		'name',
-		'is_verified'
+		'is_verified',
+		'role'
 	];
 
 	public function email_reset_token()
