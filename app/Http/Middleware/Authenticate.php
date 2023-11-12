@@ -21,7 +21,6 @@ class Authenticate extends Middleware
         if($request -> cookie('temporal-access-token')){
             $request -> headers -> set('Authorization', 'Bearer ' . $request -> cookie('temporal-access-token'));
         }
-        //dd($request);
         $this -> authenticate($request, $guards);
         return $next($request);
     }

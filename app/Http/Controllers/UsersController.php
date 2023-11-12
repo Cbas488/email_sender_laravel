@@ -32,7 +32,7 @@ use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
-
+use Illuminate\Support\Facades\Gate;
 
 class UsersController extends Controller
 {
@@ -98,6 +98,8 @@ class UsersController extends Controller
 
             $user = new GetUser(User::findOrFail($id));
 
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+
             return ApiResponse::success(data: $user);
         } catch(InvalidArgument $error){
             return ApiResponse::fail(
@@ -112,10 +114,20 @@ class UsersController extends Controller
                 [$error -> getMessage()]
             );
         } catch(Exception $error){
-            return ApiResponse::fail(
-                'An error has occurred, try again or contact the administrator.',
-                errors: [$error -> getMessage()]
-            );
+            $code = $error -> getStatusCode() ? $error -> getStatusCode() : 500;
+            switch ($code) {
+                case 403:
+                    return ApiResponse::fail(
+                        $error -> getMessage(),
+                        $code,
+                        ['You do not have access to this resource.']
+                    );
+                default:
+                    return ApiResponse::fail(
+                        message: 'An error has occurred, try again or contact the administrator.',
+                        errors: [$error -> getMessage()]
+                    );
+            }
         }
     }
 
@@ -129,6 +141,8 @@ class UsersController extends Controller
         DB::beginTransaction();
         try {
             $user = User::findOrFail($id);
+
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
 
             if($user -> email != $request -> email){
                 $token = Str::random(71);
