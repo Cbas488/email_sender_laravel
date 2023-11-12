@@ -26,5 +26,8 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('user-access-own', function(User $user, string $userId){
             return $user -> id == $userId;
         });
+        Gate::define('user-verified', function (User $user){
+            return $user -> is_verified;
+        });
     }
 }

@@ -94,11 +94,12 @@ class UsersController extends Controller
     public function show(string $id)
     {
         try{
+            abort_if(!Gate::allows('user-verified'), JsonResponse::HTTP_FORBIDDEN, "Access denied, you need verify your account");
+            abort_if(!Gate::allows('user-access-own', [$id]), JsonResponse::HTTP_FORBIDDEN, "Access Denied");
+
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $user = new GetUser(User::findOrFail($id));
-
-            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
 
             return ApiResponse::success(data: $user);
         } catch(InvalidArgument $error){
@@ -116,7 +117,7 @@ class UsersController extends Controller
         } catch(Exception $error){
             $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
             switch ($code) {
-                case 403:
+                case JsonResponse::HTTP_FORBIDDEN:
                     return ApiResponse::fail(
                         $error -> getMessage(),
                         $code,
@@ -140,10 +141,11 @@ class UsersController extends Controller
 
         DB::beginTransaction();
         try {
+            abort_if(!Gate::allows('user-verified'), JsonResponse::HTTP_FORBIDDEN, "Access denied, you need verify your account");
 
             $user = User::findOrFail($id);
 
-            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), JsonResponse::HTTP_FORBIDDEN, "Access Denied");
             
             if($user -> email != $request -> email){
                 $token = Str::random(71);
@@ -196,7 +198,7 @@ class UsersController extends Controller
             DB::rollBack();
             $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
             switch ($code) {
-                case 403:
+                case JsonResponse::HTTP_FORBIDDEN:
                     return ApiResponse::fail(
                         $error -> getMessage(),
                         $code,
@@ -217,11 +219,13 @@ class UsersController extends Controller
     public function disableAccount(string $id)
     {
         try{
+            abort_if(!Gate::allows('user-verified'), JsonResponse::HTTP_FORBIDDEN, "Access denied, you need verify your account");
+
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $user = User::withTrashed() -> findOrFail($id);
 
-            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), JsonResponse::HTTP_FORBIDDEN, "Access Denied");
 
             if($user -> trashed()){ 
                 return ApiResponse::fail(
@@ -247,7 +251,7 @@ class UsersController extends Controller
         } catch(Exception $error){
             $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
             switch ($code) {
-                case 403:
+                case JsonResponse::HTTP_FORBIDDEN:
                     return ApiResponse::fail(
                         $error -> getMessage(),
                         $code,
@@ -306,11 +310,13 @@ class UsersController extends Controller
      */
     public function destroy(string $id){
         try {
+            abort_if(!Gate::allows('user-verified'), JsonResponse::HTTP_FORBIDDEN, "Access denied, you need verify your account");
+
             if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
 
             $user = User::withTrashed() -> findOrFail($id);
 
-            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), JsonResponse::HTTP_FORBIDDEN, "Access Denied");
 
             $user -> forceDelete();
 
@@ -330,7 +336,7 @@ class UsersController extends Controller
         } catch(Exception $error){
             $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
             switch ($code) {
-                case 403:
+                case JsonResponse::HTTP_FORBIDDEN:
                     return ApiResponse::fail(
                         $error -> getMessage(),
                         $code,
@@ -435,9 +441,11 @@ class UsersController extends Controller
 
         DB::beginTransaction();
         try {
+            abort_if(!Gate::allows('user-verified'), JsonResponse::HTTP_FORBIDDEN, "Access denied, you need verify your account");
+
             $user = User::where('email', $request -> previous_email) -> first();
 
-            abort_if(!Gate::allows('user-access-own', [$user -> id]), 403, "Access Denied");
+            abort_if(!Gate::allows('user-access-own', [$user -> id]), JsonResponse::HTTP_FORBIDDEN, "Access Denied");
 
             $emailTokenRecord = EmailResetToken::findOrFail($user -> id);
             if(!Hash::check($token, $emailTokenRecord -> token)){
@@ -496,7 +504,7 @@ class UsersController extends Controller
             DB::rollBack();
             $code = method_exists($error, 'getStatusCode') ? $error -> getStatusCode() : 500;
             switch ($code) {
-                case 403:
+                case JsonResponse::HTTP_FORBIDDEN:
                     return ApiResponse::fail(
                         $error -> getMessage(),
                         $code,
@@ -583,7 +591,11 @@ class UsersController extends Controller
         }
     }
 
-    public function login(LoginUserRequest $request){
+    public function login(LoginUserRequest $request){ 
+        if(!Gate::allows('user-verified')){
+            return ApiResponse::fail("Access denied, you need verify your account", JsonResponse::HTTP_FORBIDDEN, ["You do not have access to login."]);
+        }
+
         $credentials = [
             'email' => $request -> email,
             'password' => $request -> password
