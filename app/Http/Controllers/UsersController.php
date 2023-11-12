@@ -7,6 +7,7 @@ use App\Exceptions\TokenExpiredException;
 use App\Exceptions\TokenHasBeenUsedException;
 use App\Http\Requests\User\ChangeEmailRequest;
 use App\Http\Requests\User\ChangePasswordUserRequest;
+use App\Http\Requests\User\EnableAccountUser;
 use App\Http\Requests\User\LoginUserRequest;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
@@ -32,6 +33,7 @@ use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Gate;
 
 class UsersController extends Controller
@@ -269,11 +271,15 @@ class UsersController extends Controller
     /**
      * Enable account disabled
      */
-    public function enableAccount(string $id){
+    public function enableAccount(EnableAccountUser $request){
         try {
-            if(!is_numeric($id)){ throw new InvalidArgument('The ID must be numeric.'); }
+            $user = User::withTrashed()
+                ->where('email', $request -> email)
+                ->firstOrFail();
 
-            $user = User::withTrashed() -> findOrFail($id);
+            if(!Hash::check($request -> password, $user -> password)){
+                throw new AuthorizationException('Incorrect password');
+            } 
 
             if($user -> trashed()){
                 $user -> restore();
@@ -285,17 +291,17 @@ class UsersController extends Controller
             }
 
             return response() -> noContent();
-        } catch(InvalidArgument $error){
-            return ApiResponse::fail(
-                'Validation error.',
-                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
-                [$error -> getMessage()]
-            );
         } catch(ModelNotFoundException $error){
             return ApiResponse::fail(
                 'User not found.',
                 JsonResponse::HTTP_NOT_FOUND,
                 [$error -> getMessage()]
+            );
+        } catch(AuthorizationException $error){
+            return ApiResponse::fail(
+                'Unauthorized',
+                JsonResponse::HTTP_UNAUTHORIZED,
+                errors: [$error -> getMessage()]
             );
         } catch(Exception $error){
             return ApiResponse::fail(
@@ -591,11 +597,7 @@ class UsersController extends Controller
         }
     }
 
-    public function login(LoginUserRequest $request){ 
-        if(!Gate::allows('user-verified')){
-            return ApiResponse::fail("Access denied, you need verify your account", JsonResponse::HTTP_FORBIDDEN, ["You do not have access to login."]);
-        }
-
+    public function login(LoginUserRequest $request){
         $credentials = [
             'email' => $request -> email,
             'password' => $request -> password
@@ -603,6 +605,9 @@ class UsersController extends Controller
 
         if(Auth::attempt($credentials)){
             $user = Auth::user();
+            if(!Gate::allows('user-verified')){
+                return ApiResponse::fail("Access denied, you need verify your account", JsonResponse::HTTP_FORBIDDEN, ["You do not have access to login."]);
+            }
             $user -> tokens() -> delete();
             $token = $user -> createToken('temporal-access-token', ["*"], Carbon::now() -> addDay(1)) -> plainTextToken;
             $cookie = cookie('temporal-access-token', $token, 60 * 24);
@@ -611,5 +616,13 @@ class UsersController extends Controller
         }
 
         return ApiResponse::fail("Invalid credentials", JsonResponse::HTTP_UNAUTHORIZED);
+    }
+
+    public function logout(){
+        Auth::user() -> tokens() -> delete();
+
+        $cookie = Cookie::forget('temporal-access-token');
+
+        return ApiResponse::success('Logout success') -> withCookie($cookie);
     }
 }

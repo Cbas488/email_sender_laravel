@@ -28,15 +28,16 @@ Route::prefix('v1') -> group(function() {
             Route::put('{id}', [UsersController::class, 'update']);
             Route::delete('{id}', [UsersController::class, 'destroy']);
             Route::post('change-email', [UsersController::class, 'changeEmail']);
-            Route::get('{id}', [UsersController::class, 'show']);
+            Route::get('{id}', [UsersController::class, 'show'])->where('id', '^(?!logout$)[\w\d]+$');
+            Route::get('logout', [UsersController::class, 'logout']);
             Route::delete('disable-account/{id}', [UsersController::class, 'disableAccount']);
         });
 
         Route::post('/', [UsersController::class, 'store']);
-        Route::post('enable-account/{id}', [UsersController::class, 'enableAccount']);
+        Route::post('enable-account', [UsersController::class, 'enableAccount']);
         Route::get('regenerate-verification-token/{id}', [UsersController::class, 'regenerateVerificationToken']);
         Route::patch('change-password/{id}', [UsersController::class, 'changePassword']);
         Route::get('verify-account', [UsersController::class, 'verifyAccount']);
-        Route::post('/login', [UsersController::class, 'login']);
+        Route::post('login', [UsersController::class, 'login']);
     });
 });
