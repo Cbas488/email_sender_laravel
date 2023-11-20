@@ -45,15 +45,7 @@ class UsersController extends Controller
     {
         return ApiResponse::success(data: User::all());
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
+    
     /**
      * Store a newly created User in Database.
      */
@@ -235,7 +227,10 @@ class UsersController extends Controller
                     JsonResponse::HTTP_CONFLICT,
                 ); 
             }
-            else { $user -> delete(); }
+            else { 
+                $this -> logout();
+                $user -> delete(); 
+            }
 
             return response() -> noContent();
         } catch(InvalidArgument $error){
@@ -324,6 +319,7 @@ class UsersController extends Controller
 
             abort_if(!Gate::allows('user-access-own', [$user -> id]), JsonResponse::HTTP_FORBIDDEN, "Access Denied");
 
+            $this -> logout();
             $user -> forceDelete();
 
             return response() -> noContent();
